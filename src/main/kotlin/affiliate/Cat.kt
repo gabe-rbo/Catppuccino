@@ -1,6 +1,6 @@
 package dev.cdh.affiliate
 
-import dev.cdh.SCREEN_SIZE
+import dev.cdh.SCREEN_BOUNDS
 import dev.cdh.clampToScreen
 import dev.cdh.constants.Behave
 import dev.cdh.constants.BubbleState
@@ -14,6 +14,7 @@ import kotlin.math.abs
 import kotlin.random.Random
 
 class Cat(private val resourcesLoader: ResourcesLoader) {
+    val catType: String get() = resourcesLoader.selectedCatType
     val window = CatWindow(this)
 
     var currentAction = Behave.SLEEP
@@ -31,10 +32,13 @@ class Cat(private val resourcesLoader: ResourcesLoader) {
         }
     private val wanderTarget = Point(0, 0)
     val animationState = AnimationState()
+    var currentRender: RenderedFrame
+        private set
 
     init {
         loadFramesForAction(currentAction)
         loadBubbleFrames(bubbleState)
+        currentRender = SpriteRenderer.render(this)
     }
 
     fun update() {
@@ -42,6 +46,7 @@ class Cat(private val resourcesLoader: ResourcesLoader) {
         performMovement()
         updateAnimation()
         manageBubbleState()
+        currentRender = SpriteRenderer.render(this)
         window.repaint()
     }
 
@@ -164,7 +169,7 @@ class Cat(private val resourcesLoader: ResourcesLoader) {
     private fun performMovement() {
         val loc = window.location
         loc.move(currentAction)
-        loc.clampToScreen(SCREEN_SIZE, window.size)
+        loc.clampToScreen(SCREEN_BOUNDS, window.size)
 
         window.location = loc
     }

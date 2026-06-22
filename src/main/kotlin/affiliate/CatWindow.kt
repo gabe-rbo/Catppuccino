@@ -3,39 +3,52 @@ package dev.cdh.affiliate
 import dev.cdh.WINDOW_SIZE
 import dev.cdh.constants.Behave
 import dev.cdh.constants.BubbleState
-import java.awt.Color
 import java.awt.Dimension
 import java.awt.Point
+import java.awt.Window
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JWindow
 
-class CatWindow(private val cat: Cat) : JWindow() {
+/**
+ * Hosts a single cat. The window is clipped to the cat's silhouette via [Window.setShape] (the X
+ * Shape extension) rather than per-pixel translucency: alpha-composited windows render black on the
+ * second monitor here and lose their alpha when dragged across GraphicsDevices, whereas a shaped
+ * window stays correct on every monitor. The shape is only re-applied when the frame actually
+ * changes (tracked by [appliedShapeKey]).
+ */
+class CatWindow(private val cat: Cat) {
+    private val window = JWindow()
+    private var appliedShapeKey: String? = null
+
     init {
-        setupWindow()
+        window.type = Window.Type.UTILITY
+        window.setSize(WINDOW_SIZE, WINDOW_SIZE)
+        window.preferredSize = Dimension(WINDOW_SIZE, WINDOW_SIZE)
+        window.isAlwaysOnTop = true
+        window.add(Stage(cat))
+        window.setLocationRelativeTo(null)
         setupMouseListeners()
-        add(Stage(cat))
     }
 
-    private fun setupWindow() {
-        setType(Type.UTILITY)
-        setSize(WINDOW_SIZE, WINDOW_SIZE)
-        setPreferredSize(Dimension(WINDOW_SIZE, WINDOW_SIZE))
-        setLocationRelativeTo(null)
-        setAlwaysOnTop(true)
-        setBackground(Color(0, 0, 0, 0))
+    private fun applyShape() {
+        val render = cat.currentRender
+        if (render.key != appliedShapeKey) {
+            window.shape = render.shape
+            appliedShapeKey = render.key
+        }
     }
 
     private fun setupMouseListeners() {
-        val adapter: MouseAdapter = object : MouseAdapter() {
+        val adapter = object : MouseAdapter() {
             private val dragOffset = Point(0, 0)
 
             override fun mousePressed(e: MouseEvent) {
-                dragOffset.setLocation(e.getX(), e.getY())
+                dragOffset.setLocation(e.x, e.y)
             }
 
             override fun mouseDragged(e: MouseEvent) {
-                setLocation(e.locationOnScreen.x - dragOffset.x, e.locationOnScreen.y - dragOffset.y)
+                window.setLocation(e.locationOnScreen.x - dragOffset.x, e.locationOnScreen.y - dragOffset.y)
                 if (cat.changeAction(Behave.RISING)) {
                     cat.animationState.resetFrame()
                 }
@@ -52,7 +65,27 @@ class CatWindow(private val cat: Cat) : JWindow() {
                 cat.bubbleState = BubbleState.HEART
             }
         }
-        addMouseListener(adapter)
-        addMouseMotionListener(adapter)
+        window.addMouseListener(adapter)
+        window.addMouseMotionListener(adapter)
+    }
+
+    var location: Point
+        get() = window.location
+        set(value) { window.location = value }
+
+    val locationOnScreen: Point get() = window.locationOnScreen
+
+    val size: Dimension get() = window.size
+
+    var isVisible: Boolean
+        get() = window.isVisible
+        set(value) {
+            if (value) applyShape() // clip before first show so no full rectangle flashes
+            window.isVisible = value
+        }
+
+    fun repaint() {
+        applyShape()
+        window.repaint()
     }
 }

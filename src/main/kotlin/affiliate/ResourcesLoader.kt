@@ -8,8 +8,7 @@ import java.io.IOException
 import java.util.*
 import javax.imageio.ImageIO
 
-class ResourcesLoader {
-    private val selectedCatType = CAT_TYPES.random()
+class ResourcesLoader(val selectedCatType: String = CAT_TYPES.random()) {
     private val localCache: MutableMap<String?, MutableList<BufferedImage?>?> = HashMap()
 
     fun loadFrames(behave: Behave): MutableList<BufferedImage?>? {
@@ -72,6 +71,6 @@ class ResourcesLoader {
     }
 
     companion object {
-        private val CAT_TYPES = mutableListOf("calico_cat", "grey_tabby_cat", "orange_cat", "white_cat")
+        val CAT_TYPES = listOf("calico_cat", "grey_tabby_cat", "orange_cat", "white_cat")
     }
 }
