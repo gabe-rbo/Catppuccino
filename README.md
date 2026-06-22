@@ -1,100 +1,130 @@
-# 🐱🐱 Catppuccino 🐱🐱
+# 🐱 Catppuccino
 
-![curled_1.png](src/main/resources/white_cat/curled/curled_1.png)![curled_1.png](src/main/resources/orange_cat/curled/curled_1.png)![curled_1.png](src/main/resources/grey_tabby_cat/curled/curled_1.png)![curled_1.png](src/main/resources/calico_cat/curled/curled_1.png)
+> **Forked from [DongH-Chen/Catppuccino](https://github.com/DongH-Chen/Catppuccino).**
+> This fork adds a full system-tray control panel, named cats, a configurable startup routine, and a
+> one-command always-on install for Linux.
 
-A lightweight and adorable desktop virtual pet cat. It will roam freely on your desktop, play, sleep, and keep you
-company during your work or study time, bringing a touch of relaxation and delight.
+Little pixel cats that live on your desktop. They wander around, stretch, nap, and generally keep you
+company while you work — and a tray icon lets you run the whole thing without ever touching a terminal.
 
-## Preview
+![preview](doc/video.gif)
 
-![video.gif](doc/video.gif)
+## What this fork adds
 
-![curled_1.png](src/main/resources/white_cat/curled/curled_1.png)![curled_1.png](src/main/resources/orange_cat/curled/curled_1.png)![curled_1.png](src/main/resources/grey_tabby_cat/curled/curled_1.png)![curled_1.png](src/main/resources/calico_cat/curled/curled_1.png)
+- **System-tray control panel** — one icon to rule the cats: put them all to sleep, show/edit their
+  names, change their size, and spawn or remove individual cats. The icon stays put even with zero cats.
+- **Named cats** — every cat gets a name (random, or one you choose) shown on a little tag above it.
+- **Configurable startup routine** — pick exactly which cats (color + name) spawn when the app
+  launches; it's saved to disk and editable from the tray's **Startup** menu.
+- **Always-on install** — `./install.sh` registers a systemd *user* service so the tray is there on
+  every login and auto-restarts if it ever crashes. No root, no packaging.
 
-## Feature
+## Requirements
 
-- **Adorable Interactions**: The kitten has multiple states, including walking, stretching, napping.
-- **Desktop Roaming**: It intelligently moves around the edges of your screen without interrupting your work.
-- **Low Resource Usage**: Built with Java **Swing**, it uses minimal system resources.
-- **Cross-Platform**: Supports Windows, macOS and Linux.
-- **Four Skins Are Randomly Selected**: calico cat, grey tabby cat, orange cat and white cat.
-- **No dependencies**: No additional third-party library dependencies, run out of box.
+- **Java 25** (JRE/JDK). On Debian/Ubuntu/Mint: `sudo apt install openjdk-25-jdk`.
 
-## Quick Start
-
-### Prerequisites
-
-- Java 25
-
-## Installation & Running
-
-**Run the application** (spawns one random cat)
+## Quick start
 
 ```bash
-# bash / Linux / macOS
+# Linux / macOS
 ./gradlew run
-```
-```powershell
-# Windows PowerShell
+
+# Windows
 .\gradlew.bat run
 ```
 
-## Spawning Cats
+This spawns one random cat and adds the Catppuccino icon to your system tray.
 
-By default the app spawns **one random cat**. You can choose which cats appear, how many, and how
-big they are by passing arguments.
+## Using the tray menu
 
-**Available cat types:** `calico_cat` (tricolored), `grey_tabby_cat`, `orange_cat`, `white_cat`
+Click the tray icon for the control panel:
 
-### Via Gradle
+| Item | What it does |
+|------|--------------|
+| **Sleep (all cats)** | Curls every cat up with a 💤 bubble and stops them roaming. Untick to wake. |
+| **Show names** | Toggles a name tag above each cat. |
+| **Size** | Resize every cat to a preset (75–200 px). |
+| **Spawn** | Add a cat right now — pick a color or *Random*. |
+| **Rename / Remove** | Rename or remove a specific live cat by name (*Remove all* keeps the tray icon). |
+| **Startup** | Edit the routine that runs at launch — add/rename/remove cats, or **Use current on-screen cats** to snapshot what you have now. |
 
-Pass arguments with `--args` (use `.\gradlew.bat` on Windows):
+> There is intentionally **no "Exit"** item — this is meant to be an always-on tray app, so it can't
+> be killed by a stray click. To stop it, see [Stopping it](#stopping-it).
+
+## Command-line options
+
+Cats and options can also be passed as arguments (handy for `./gradlew run --args="…"` or a jar):
 
 ```bash
-# a single specific cat
-./gradlew run --args="orange_cat"
+# specific cats (one per word; repeat a type for duplicates)
+orange_cat calico_cat grey_tabby_cat
 
-# several cats at once — one per type listed (repeat a type to get duplicates)
-./gradlew run --args="orange_cat calico_cat grey_tabby_cat"
+# name a cat with type:name
+orange_cat:cebola calico_cat:kamala
 
-# set the on-screen size in pixels with --size (default 100)
-./gradlew run --args="--size 150 orange_cat white_cat"
+# on-screen size in pixels (default 100)
+--size 150 orange_cat white_cat
+
+# start with only the tray icon, no cats
+--no-cats
 ```
 
-### Via a built jar
+**Cat types:** `calico_cat` (tricolored), `grey_tabby_cat`, `orange_cat`, `white_cat`.
+
+When no cat arguments are given, the app uses your saved **startup routine** (see below); if there's
+no routine yet, it spawns one random cat.
+
+## Always-on tray (Linux, systemd) — recommended
+
+Run the installer once. It builds the jar and registers a systemd **user** service that starts the
+tray at every login and restarts it on crash:
+
+```bash
+./install.sh
+```
+
+Out of the box the service launches **tray-only (no cats)** — open the tray's **Startup** menu to
+choose which cats spawn at login (it's saved to `~/.config/catppuccino/startup.properties`). Useful
+commands:
+
+```bash
+systemctl --user status catppuccino     # is it running?
+journalctl --user -u catppuccino -f      # live logs
+./uninstall.sh                           # remove the service
+```
+
+A graphical login session is required (the tray needs an X display), so the service starts at login
+rather than at boot.
+
+### Startup on Windows / macOS
+
+- **Windows:** put a shortcut to `java -jar C:\path\to\Catppuccino-1.0.jar --no-cats` in the Startup
+  folder (<kbd>Win</kbd>+<kbd>R</kbd> → `shell:startup`).
+- **macOS:** add `java -jar /path/to/Catppuccino-1.0.jar --no-cats` as a *Login Item* (System
+  Settings → General → Login Items), e.g. wrapped in a small `.command` script.
+
+## Building a jar
 
 ```bash
 ./gradlew jar
 java -jar build/libs/Catppuccino-1.0.jar orange_cat calico_cat
 ```
 
-### Spawn automatically on startup
+## Stopping it
 
-**Linux (freedesktop / GNOME / XFCE):** create `~/.config/autostart/catppuccino.desktop`:
+Since there's no Exit menu item:
 
-```ini
-[Desktop Entry]
-Type=Application
-Name=Catppuccino Cats
-Exec=java -jar /absolute/path/to/Catppuccino-1.0.jar orange_cat calico_cat
-Terminal=false
-X-GNOME-Autostart-enabled=true
-```
+- Installed as the service: `systemctl --user stop catppuccino` (or `./uninstall.sh` to remove it).
+- Launched manually: close the terminal / `Ctrl+C`, or `kill` the `java` process.
 
-**Windows:** put a shortcut to `java -jar C:\path\to\Catppuccino-1.0.jar orange_cat calico_cat`
-in the Startup folder (press <kbd>Win</kbd>+<kbd>R</kbd>, run `shell:startup`).
+## Interacting with the cats
 
-**macOS:** add the same `java -jar ...` command as a *Login Item* (System Settings → General →
-Login Items), e.g. wrapped in a small `.command` script.
+- **Drag** a cat to pick it up; it'll flop back down when you let go.
+- **Click** a cat for a little ❤️.
+- Otherwise just ignore them — they entertain themselves and stay out of your way.
 
-## How to Use
+## Credits
 
-- **Interact**: Try clicking or dragging the kitten with your mouse to see its reactions!
-
-- **Ignore It**: Don't worry, it will entertain itself happily without getting in your way.
-
-Enjoy!
-
-PS: Art resources copyright from Stardew Valley
-
-![curled_1.png](src/main/resources/white_cat/curled/curled_1.png)![curled_1.png](src/main/resources/orange_cat/curled/curled_1.png)![curled_1.png](src/main/resources/grey_tabby_cat/curled/curled_1.png)![curled_1.png](src/main/resources/calico_cat/curled/curled_1.png)
+- Original project: **[DongH-Chen/Catppuccino](https://github.com/DongH-Chen/Catppuccino)** — this is
+  a fork.
+- Cat sprite art: from **Stardew Valley**.

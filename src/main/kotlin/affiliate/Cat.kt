@@ -35,6 +35,23 @@ class Cat(private val resourcesLoader: ResourcesLoader) {
     var currentRender: RenderedFrame
         private set
 
+    var name: String = ""
+        private set
+    private val nameTag = NameTagWindow()
+    private var nameVisible = false
+
+    /** While asleep the cat stays curled (with the 💤 bubble) and never wanders. */
+    var asleep = false
+        set(value) {
+            if (field == value) return
+            field = value
+            if (value) {
+                state = State.DEFAULT // cancel any in-progress wander so it can't override CURLED
+                changeAction(Behave.CURLED)
+                animationState.resetFrame()
+            }
+        }
+
     init {
         loadFramesForAction(currentAction)
         loadBubbleFrames(bubbleState)
@@ -48,6 +65,28 @@ class Cat(private val resourcesLoader: ResourcesLoader) {
         manageBubbleState()
         currentRender = SpriteRenderer.render(this)
         window.repaint()
+        if (nameVisible) nameTag.updatePosition(window.location, window.size)
+    }
+
+    fun setName(value: String) {
+        name = value
+        nameTag.setText(value)
+    }
+
+    fun setNameVisible(visible: Boolean) {
+        nameVisible = visible
+        if (visible) nameTag.updatePosition(window.location, window.size)
+        nameTag.isVisible = visible
+    }
+
+    fun resize(px: Int) {
+        window.setSize(px)
+        if (nameVisible) nameTag.updatePosition(window.location, window.size)
+    }
+
+    fun dispose() {
+        window.dispose()
+        nameTag.dispose()
     }
 
     fun changeAction(behave: Behave): Boolean {
@@ -135,6 +174,7 @@ class Cat(private val resourcesLoader: ResourcesLoader) {
 
     private fun handleFrames() {
         if (currentAction == Behave.RISING) return
+        if (asleep) return // stay curled: don't run the wander/movement state machine
 
         if (state == State.WANDER) {
             handleWandering()
@@ -175,6 +215,7 @@ class Cat(private val resourcesLoader: ResourcesLoader) {
     }
 
     fun tryWandering() {
+        if (asleep) return
         if (Random.nextBoolean()) return
 
         state = State.WANDER

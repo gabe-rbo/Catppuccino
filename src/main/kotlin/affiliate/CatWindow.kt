@@ -69,6 +69,16 @@ class CatWindow(private val cat: Cat) {
         window.addMouseMotionListener(adapter)
     }
 
+    fun setSize(size: Int) {
+        window.setSize(size, size)
+        window.preferredSize = Dimension(size, size)
+        repaint() // re-clip; the next render at the new WINDOW_SIZE refreshes the sprite
+    }
+
+    fun dispose() {
+        window.dispose()
+    }
+
     var location: Point
         get() = window.location
         set(value) { window.location = value }
